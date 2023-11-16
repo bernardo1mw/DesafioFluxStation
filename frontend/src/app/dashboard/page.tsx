@@ -29,10 +29,7 @@ interface Data {
 
 
 export default async function DashboardPage() {
-	// const  session  = await getServerSession(authOptions);
-  // if(!session || !session.user ) {
-	// 	redirect('/signin')
-	// }
+	
 	const session = await getServerSession(authOptions)
 	const res = await fetch(BACKEND_URL + '/refuel/history', {
 		method: 'GET',
@@ -50,11 +47,7 @@ export default async function DashboardPage() {
       <TabGroup className="mt-6">
         <TabPanels>
           <TabPanel>
-						{/* <div className="mt-10">
-						<Card>
-	          	<TableRow/>
-						</Card>
-						</div> */}
+						
 
             <div className="mt-6">
               <Card>
