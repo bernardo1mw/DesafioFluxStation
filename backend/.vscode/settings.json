@@ -1,0 +1,9 @@
+{
+    "editor.codeActionsOnSave": { "source.fixAll": true },
+  "editor.formatOnSave": true,
+  "editor.tabSize": 4,
+"editor.detectIndentation": false,
+"typescript.preferences.importModuleSpecifier": "relative",
+
+
+}

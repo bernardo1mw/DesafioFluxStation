@@ -1,0 +1,1 @@
+{"version":3,"file":"base.js","sourceRoot":"","sources":["../../../src/domain/exceptions/base.ts"],"names":[],"mappings":";;;AAAA,MAAsB,YAAa,SAAQ,KAAK;IAC/C,YACU,aAAyC,EACzC,aAAqB,GAAG,EACxB,aAAqB,8BAA8B,EACnD,OAA2B;QAEpC,KAAK,EAAE,CAAC;QALC,kBAAa,GAAb,aAAa,CAA4B;QACzC,eAAU,GAAV,UAAU,CAAc;QACxB,eAAU,GAAV,UAAU,CAAyC;QACnD,YAAO,GAAP,OAAO,CAAoB;IAGrC,CAAC;CACD;AATD,oCASC"}
