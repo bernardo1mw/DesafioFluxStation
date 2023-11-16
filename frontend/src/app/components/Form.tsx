@@ -49,7 +49,6 @@ const Form = () => {
       return;
     }
     alert('Abastecimento Registrado!');
-		//console.log(data)
 	}
 	 
 	return (
