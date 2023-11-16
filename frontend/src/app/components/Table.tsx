@@ -1,172 +1,410 @@
 "use client"
-import { Fragment, useState } from "react";
-import { Dialog, Transition } from "@headlessui/react";
-import { ArrowsExpandIcon } from "@heroicons/react/outline";
-import {
-  Button,
-  Card,
-  Text,
-  Table,
-  TableHead,
-  TableRow,
-  TableHeaderCell,
-  TableBody,
-  TableCell,
-} from "@tremor/react";
+import * as React from 'react';
+import { alpha } from '@mui/material/styles';
+import Box from '@mui/material/Box';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TablePagination from '@mui/material/TablePagination';
+import TableRow from '@mui/material/TableRow';
+import TableSortLabel from '@mui/material/TableSortLabel';
+import Toolbar from '@mui/material/Toolbar';
+import Typography from '@mui/material/Typography';
+import Paper from '@mui/material/Paper';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Switch from '@mui/material/Switch';
+import DeleteIcon from '@mui/icons-material/Delete';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import { visuallyHidden } from '@mui/utils';
+import { Button } from "@tremor/react";
+import { Icon } from "@tremor/react";
+import AddIcon from '@mui/icons-material/Add';
+import Link from 'next/link';
+import moment from 'moment';
 
-const users = [
+
+
+interface Data1 {
+	id: number;
+  licensePlate: string;
+  fuel: string;
+  refuelDate: Date;
+  quantity: number;
+	price: number
+  total: number;
+}
+
+
+function createData1(
+	id: number,
+  licensePlate: string,
+  fuel: string,
+	refuelDate: Date,
+  quantity: number,
+	price: number,
+  total: number,
+): Data1 {
+  return {
+		id,
+    licensePlate,
+		fuel,
+		refuelDate,
+		quantity,
+		price,
+		total
+  };
+}
+
+function descendingComparator<T>(a: T, b: T, orderBy: keyof T) {
+  if (b[orderBy] < a[orderBy]) {
+    return -1;
+  }
+  if (b[orderBy] > a[orderBy]) {
+    return 1;
+  }
+  return 0;
+}
+
+type Order = 'asc' | 'desc';
+
+function getComparator<Key extends keyof any>(
+  order: Order,
+  orderBy: Key,
+): (
+  a: { [key in Key]: number | string | Date},
+  b: { [key in Key]: number | string | Date},
+) => number {
+  return order === 'desc'
+    ? (a, b) => descendingComparator(a, b, orderBy)
+    : (a, b) => -descendingComparator(a, b, orderBy);
+}
+
+// Since 2020 all major browsers ensure sort stability with Array.prototype.sort().
+// stableSort() brings sort stability to non-modern browsers (notably IE11). If you
+// only support modern browsers you can replace stableSort(exampleArray, exampleComparator)
+// with exampleArray.slice().sort(exampleComparator)
+function stableSort<T>(array: readonly T[], comparator: (a: T, b: T) => number) {
+  const stabilizedThis = array.map((el, index) => [el, index] as [T, number]);
+  stabilizedThis.sort((a, b) => {
+    const order = comparator(a[0], b[0]);
+    if (order !== 0) {
+      return order;
+    }
+    return a[1] - b[1];
+  });
+  return stabilizedThis.map((el) => el[0]);
+}
+
+interface HeadCell {
+  disablePadding: boolean;
+  id: keyof Data1;
+  label: string;
+  numeric: boolean;
+}
+
+const headCells: readonly HeadCell[] = [
+	{
+		// 	id: number;
+		// licensePlate: string;
+		// fuel: string;
+		// date: Date;
+		// quantity: number;
+		// total: number;
+			id: 'id',
+			numeric: true,
+			disablePadding: true,
+			label: 'ID',
+		},
   {
-    name: "Conor McFlow",
-    country: "Ireland",
-    lastActive: "1d ago",
-    transactions: 41,
+    id: 'licensePlate',
+    numeric: false,
+    disablePadding: true,
+    label: 'Placa do veiculo',
   },
-  
   {
-    name: "Paul String",
-    country: "Germany",
-    lastActive: "8min ago",
-    transactions: 8,
-  },
-// ...
-  {
-    name: "John Done",
-    country: "Switzerland",
-    lastActive: "2min ago",
-    transactions: 21,
+    id: 'fuel',
+    numeric: false,
+    disablePadding: false,
+    label: 'Combustivel',
   },
   {
-    name: "Donald Blake",
-    country: "Austria",
-    lastActive: "4min ago",
-    transactions: 15,
+    id: 'refuelDate',
+    numeric: false,
+    disablePadding: false,
+    label: 'Data do abastecimento',
   },
   {
-    name: "Lena Mayer",
-    country: "Germany",
-    lastActive: "12d ago",
-    transactions: 1,
+    id: 'quantity',
+    numeric: true,
+    disablePadding: false,
+    label: 'Quantidade (L)',
+  },
+  {
+    id: 'total',
+    numeric: true,
+    disablePadding: false,
+    label: 'Custo do abastecimento',
   },
 ];
 
-export default function HistoryTable() {
-  const [isOpen, setIsOpen] = useState(false);
+interface EnhancedTableProps {
+  numSelected: number;
+  onRequestSort: (event: React.MouseEvent<unknown>, property: keyof Data1) => void;
+  onSelectAllClick: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  order: Order;
+  orderBy: string;
+  rowCount: number;
+}
 
-  const openModal = () => setIsOpen(true);
-  const closeModal = () => setIsOpen(false);
+function EnhancedTableHead(props: EnhancedTableProps) {
+  const { onSelectAllClick, order, orderBy, numSelected, rowCount, onRequestSort } =
+    props;
+  const createSortHandler =
+    (property: keyof Data1) => (event: React.MouseEvent<unknown>) => {
+      onRequestSort(event, property);
+    };
 
   return (
-    <>
-      <Card className="relative max-w-5xl mx-auto h-96 overflow-hidden">
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableHeaderCell>User</TableHeaderCell>
-              <TableHeaderCell className="text-right">country</TableHeaderCell>
-              <TableHeaderCell className="text-right">lastActive</TableHeaderCell>
-              <TableHeaderCell className="text-right">transactions</TableHeaderCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {users.map((item) => (
-              <TableRow key={item.name}>
-                <TableCell>{item.name}</TableCell>
-                <TableCell className="text-right">
-                  <Text>{item.country}</Text>
-                </TableCell>
-                <TableCell className="text-right">
-                  <Text>{item.lastActive}</Text>
-                </TableCell>
-                <TableCell className="text-right">
-                  <Text>{item.transactions}</Text>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        <div className="inset-x-0 bottom-0 flex justify-center bg-gradient-to-t from-white pt-12 pb-8 absolute rounded-b-lg">
-          <Button
-            icon={ArrowsExpandIcon}
-            className="bg-white shadow-md border-gray-200 text-gray-500 hover:bg-gray-50 hover:border-gray-300"
-            onClick={openModal}
+    <TableHead>
+      <TableRow>
+        
+        {headCells.map((headCell) => (
+          <TableCell
+            key={headCell.id}
+            align={'right'}
+            padding={headCell.disablePadding ? 'none' : 'normal'}
+            sortDirection={orderBy === headCell.id ? order : false}
           >
-            Show more
-          </Button>
-        </div>
-      </Card>
-      <Transition appear show={isOpen} as={Fragment}>
-        <Dialog as="div" className="relative z-50" onClose={closeModal}>
-          <Transition.Child
-            as={Fragment}
-            enter="ease-out duration-300"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="ease-in duration-200"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
+            <TableSortLabel
+              active={orderBy === headCell.id}
+              direction={orderBy === headCell.id ? order : 'asc'}
+              onClick={createSortHandler(headCell.id)}
+            >
+              {headCell.label}
+              {orderBy === headCell.id ? (
+                <Box component="span" sx={visuallyHidden}>
+                  {order === 'desc' ? 'sorted descending' : 'sorted ascending'}
+                </Box>
+              ) : null}
+            </TableSortLabel>
+          </TableCell>
+        ))}
+      </TableRow>
+    </TableHead>
+  );
+}
+
+interface EnhancedTableToolbarProps {
+  numSelected: number;
+}
+
+function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
+  const { numSelected } = props;
+
+  return (
+    <Toolbar
+      sx={{
+        pl: { sm: 2 },
+        pr: { xs: 1, sm: 1 },
+        ...(numSelected > 0 && {
+          bgcolor: (theme) =>
+            alpha(theme.palette.primary.main, theme.palette.action.activatedOpacity),
+        }),
+      }}
+    >
+      {numSelected > 0 ? (
+        <Typography
+          sx={{ flex: '1 1 100%' }}
+          color="inherit"
+          variant="subtitle1"
+          component="div"
+        >
+          {numSelected} selected
+        </Typography>
+      ) : (
+        <Typography
+          sx={{ flex: '1 1 100%' }}
+          variant="h6"
+          id="tableTitle"
+          component="div"
+        >
+          Histórico de Abastecimentos
+        </Typography>
+      )}
+			<Link href='/dashboard/register'>
+      <Button className='text-black pr-3 pl-2'>
+				<AddIcon sx={{color: 'black'}}/> Registrar
+			</Button>
+			</Link>
+    </Toolbar>
+  );
+}
+
+interface EnhancedTableBodyProps {
+	data: Data1[]
+}
+
+export default function EnhancedTable(props: EnhancedTableBodyProps) {
+  const [order, setOrder] = React.useState<Order>('desc');
+  const [orderBy, setOrderBy] = React.useState<keyof Data1>('refuelDate');
+  const [selected, setSelected] = React.useState<readonly number[]>([]);
+  const [page, setPage] = React.useState(0);
+  const [dense, setDense] = React.useState(false);
+  const [rowsPerPage, setRowsPerPage] = React.useState(5);
+	const rows = props.data.map((record)=>{
+		return createData1(record.id,record.licensePlate
+			,record.fuel
+			,record.refuelDate,
+			record.quantity,
+			record.price,
+			record.total)
+	})
+
+  const handleRequestSort = (
+    event: React.MouseEvent<unknown>,
+    property: keyof Data1,
+  ) => {
+    const isAsc = orderBy === property && order === 'asc';
+    setOrder(isAsc ? 'desc' : 'asc');
+    setOrderBy(property);
+  };
+
+  const handleSelectAllClick = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.checked) {
+      const newSelected = rows.map((n) => n.id);
+      setSelected(newSelected);
+      return;
+    }
+    setSelected([]);
+  };
+
+  const handleClick = (event: React.MouseEvent<unknown>, id: number) => {
+    const selectedIndex = selected.indexOf(id);
+    let newSelected: readonly number[] = [];
+
+    if (selectedIndex === -1) {
+      newSelected = newSelected.concat(selected, id);
+    } else if (selectedIndex === 0) {
+      newSelected = newSelected.concat(selected.slice(1));
+    } else if (selectedIndex === selected.length - 1) {
+      newSelected = newSelected.concat(selected.slice(0, -1));
+    } else if (selectedIndex > 0) {
+      newSelected = newSelected.concat(
+        selected.slice(0, selectedIndex),
+        selected.slice(selectedIndex + 1),
+      );
+    }
+    setSelected(newSelected);
+  };
+
+  const handleChangePage = (event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const handleChangeDense = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setDense(event.target.checked);
+  };
+
+  const isSelected = (id: number) => selected.indexOf(id) !== -1;
+
+  // Avoid a layout jump when reaching the last page with empty rows.
+  const emptyRows =
+    page > 0 ? Math.max(0, (1 + page) * rowsPerPage - rows.length) : 0;
+
+  const visibleRows = React.useMemo(
+    () =>
+      stableSort(rows, getComparator(order, orderBy)).slice(
+        page * rowsPerPage,
+        page * rowsPerPage + rowsPerPage,
+      ),
+    [order, orderBy, page, rowsPerPage],
+  );
+
+  return (
+    <Box sx={{ width: '100%' }}>
+      <Paper sx={{ width: '100%', mb: 2 }}>
+        <EnhancedTableToolbar numSelected={selected.length} />
+        <TableContainer>
+          <Table
+            sx={{ minWidth: 750 }}
+            aria-labelledby="tableTitle"
+            size={dense ? 'small' : 'medium'}
           >
-            <div className="fixed inset-0 bg-gray-900 bg-opacity-25" />
-          </Transition.Child>
-          <div className="fixed inset-0 overflow-y-auto">
-            <div className="flex min-h-full items-center justify-center p-4 text-center">
-              <Transition.Child
-                as={Fragment}
-                enter="ease-out duration-300"
-                enterFrom="opacity-0 scale-95"
-                enterTo="opacity-100 scale-100"
-                leave="ease-in duration-200"
-                leaveFrom="opacity-100 scale-100"
-                leaveTo="opacity-0 scale-95"
-              >
-                <Dialog.Panel
-                  className="w-full max-w-xl transform overflow-hidden ring-tremor bg-white
-                                    p-6 text-left align-middle shadow-tremor transition-all rounded-xl"
-                >
-                  <div className="relative mt-3">
-                    <Table className="h-[450px]">
-                      <TableHead>
-                        <TableRow>
-                          <TableHeaderCell className="bg-white">User</TableHeaderCell>
-                          <TableHeaderCell className="bg-white text-right">country</TableHeaderCell>
-                          <TableHeaderCell className="bg-white text-right">
-                            lastActive
-                          </TableHeaderCell>
-                          <TableHeaderCell className="bg-white text-right">
-                            transactions
-                          </TableHeaderCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {users.map((item) => (
-                          <TableRow key={item.name}>
-                            <TableCell>{item.name}</TableCell>
-                            <TableCell className="text-right">
-                              <Text>{item.country}</Text>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Text>{item.lastActive}</Text>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Text>{item.transactions}</Text>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-b from-transparent to-white z-0 h-20 w-full" />
-                    </Table>
-                  </div>
-                  <Button
-                    className="mt-5 w-full bg-white border-gray-200 text-gray-500 hover:bg-gray-50 hover:border-gray-300"
-                    onClick={closeModal}
+            <EnhancedTableHead
+              numSelected={selected.length}
+              order={order}
+              orderBy={orderBy}
+              onSelectAllClick={handleSelectAllClick}
+              onRequestSort={handleRequestSort}
+              rowCount={rows.length}
+            />
+            <TableBody>
+              {visibleRows.map((row, index) => {
+                const isItemSelected = isSelected(row.id);
+                const labelId = `enhanced-table-checkbox-${index}`;
+
+                return (
+                  <TableRow
+                    hover
+                    onClick={(event) => handleClick(event, row.id)}
+                    role="checkbox"
+                    aria-checked={isItemSelected}
+                    tabIndex={-1}
+                    key={row.id}
+                    selected={isItemSelected}
+                    sx={{ cursor: 'pointer' }}
                   >
-                    Go back
-                  </Button>
-                </Dialog.Panel>
-              </Transition.Child>
-            </div>
-          </div>
-        </Dialog>
-      </Transition>
-    </>
+                    
+                    <TableCell
+											align='right'
+                      component="th"
+                      id={labelId}
+                      scope="row"
+                      padding="none"
+                    >
+                      {row.id}
+                    </TableCell>
+                    <TableCell align="right">{row.licensePlate}</TableCell>
+                    <TableCell align="right">{row.fuel}</TableCell>
+                    <TableCell align="right">{moment(row.refuelDate).format("DD/MM/YYYY")}</TableCell>
+                    <TableCell align="right">{row.quantity.toString()}</TableCell>
+                    <TableCell align="right">{(row.quantity*row.price).toFixed(2)}</TableCell>
+                  </TableRow>
+                );
+              })}
+              {emptyRows > 0 && (
+                <TableRow
+                  style={{
+                    height: (dense ? 33 : 53) * emptyRows,
+                  }}
+                >
+                  <TableCell colSpan={6} />
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25]}
+          component="div"
+          count={rows.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+        />
+      </Paper>
+      <FormControlLabel
+        control={<Switch checked={dense} onChange={handleChangeDense} />}
+        label="Dense padding"
+      />
+    </Box>
   );
 }

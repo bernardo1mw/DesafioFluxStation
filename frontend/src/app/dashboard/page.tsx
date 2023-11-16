@@ -10,15 +10,10 @@ import {
   TabPanel,
   TabPanels,
 } from "@tremor/react";
-import Block from '../components/TableRow';
-import TableRow from '../components/TableRow';
-import HistoryTable from '../components/Table';
-import EnhancedTable from '../components/Table1';
-import { redirect, useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import { BACKEND_URL, BASE_URL } from '../lib/constants';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../api/auth/[...nextauth]/route';
+import EnhancedTable from '../components/Table';
 
 
 
